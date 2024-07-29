@@ -49,9 +49,15 @@ find_package(OpenVINO REQUIRED COMPONENTS Runtime)
 if(WIN32)
   # OpenVINO headers have to be manually found on Windows
   set(OPENVINO_INCLUDE_DIR "$ENV{OpenVINO_DIR}\\runtime\\include")
-else()
+elseif(APPLE)
   find_path(OPENVINO_INCLUDE_DIR NAMES openvino.hpp 
     PATHS /opt/homebrew/include /usr/local/include
+    PATH_SUFFIXES openvino
+  )
+  cmake_path(GET OPENVINO_INCLUDE_DIR PARENT_PATH OPENVINO_INCLUDE_DIR)
+else()
+  find_path(OPENVINO_INCLUDE_DIR NAMES openvino.hpp 
+    PATHS /opt/intel/openvino_2024.2.0/runtime/include
     PATH_SUFFIXES openvino
   )
   cmake_path(GET OPENVINO_INCLUDE_DIR PARENT_PATH OPENVINO_INCLUDE_DIR)
@@ -175,6 +181,9 @@ include_directories(
 )
 
 add_library(common STATIC ${COMMON_SOURCES} ${COMMON_HEADERS})
+if(UNIX)
+target_compile_options(common PUBLIC -fPIC)
+endif()
 
 # These plugins are always build and use for testing
 add_plugin(hpe2d LIBS common ${OpenCV_LIBS} openvino::runtime)
