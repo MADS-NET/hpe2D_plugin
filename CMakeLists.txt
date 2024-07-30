@@ -188,6 +188,9 @@ endif()
 # These plugins are always build and use for testing
 add_plugin(hpe2d LIBS common ${OpenCV_LIBS} openvino::runtime)
 
+add_executable(query_devices ${SRC_DIR}/query_devices.cpp ${SRC_DIR}/slog.cpp)
+target_link_libraries(query_devices PRIVATE ${OpenCV_LIBS} openvino::runtime)
+
 
 # INSTALL ######################################################################
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
