@@ -169,12 +169,12 @@ public:
     if (_pipeline->isReadyToProcess()) {
       // Capturing frame
       _start_time = std::chrono::steady_clock::now();
-      while (!_camera.getVideoFrame(_curr_frame, 100)) {
-        cout << "Waiting for video frame..." << endl;
-      }
-      if (_curr_frame.empty()) {
+      // while (!_camera.getVideoFrame(_curr_frame, 100)) {
+      //   cout << "Waiting for video frame..." << endl;
+      // }
+      if (!_camera.getVideoFrame(_curr_frame, 100)) {
         // Input stream is over
-        return return_type::error;
+        return return_type::warning;
       }
       frame_num = _pipeline->submitData(
           ImageInputData(_curr_frame),
@@ -191,17 +191,17 @@ public:
     }
     if (!no_show) {
       cv::imshow("Human Pose Estimation Results", _curr_frame);
-      // _out_frame =
-      //     renderHumanPose(result->asRef<HumanPoseResult>(), _output_transform);
-      // cv::imshow("Human Pose Estimation Results", _out_frame);
-      // cv::imshow("Human Pose Estimation Results",
-      // result->asRef<HumanPoseResult>().heatMaps[0]);
+      _out_frame =
+          renderHumanPose(result->asRef<HumanPoseResult>(), _output_transform);
+      cv::imshow("Human Pose Estimation Results", _out_frame);
+      cv::imshow("Human Pose Estimation Results",
+      result->asRef<HumanPoseResult>().heatMaps[0]);
       int key = cv::waitKey(1000.0 / fps);
       if (27 == key || 'q' == key || 'Q' == key) { // Esc
         return return_type::error;
       }
     }
-    // frames_processed++;
+    frames_processed++;
 
     // Prepare output
     std::vector<HumanPose> poses = result->asRef<HumanPoseResult>().poses;
@@ -230,9 +230,9 @@ public:
 
     _start_time = chrono::steady_clock::now();
     // setup video capture
-    _camera.options->video_width=800;
-    _camera.options->video_height=600;
-    _camera.options->framerate = 25;
+    _camera.options->video_width=640;
+    _camera.options->video_height=480;
+    _camera.options->framerate = 5;
     _camera.options->verbose = false;
     _camera.startVideo();
     // _cap.open(_device);
