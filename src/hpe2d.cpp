@@ -16,7 +16,7 @@ NOTICE: MADS Version 1.0.0
 #include <pugg/Kernel.h>
 #include <source.hpp>
 // other includes as needed here
-#include <opencv2/core.hpp>
+#include <opencv2/opencv.hpp>
 #include <openvino/openvino.hpp>
 
 #include <models/hpe_model_openpose.h>
@@ -24,6 +24,7 @@ NOTICE: MADS Version 1.0.0
 #include <pipelines/async_pipeline.h>
 #include <pipelines/metadata.h>
 #include <utils/common.hpp>
+#include <lccv.hpp>
 
 // Define the name of the plugin
 #ifndef PLUGIN_NAME
@@ -152,7 +153,7 @@ class Hpe2dPlugin : public Source<json> {
 public:
   // Destructor
   ~Hpe2dPlugin() {
-    _cap.release();
+    _camera.stopVideo();
     delete _pipeline;
   }
 
@@ -168,7 +169,9 @@ public:
     if (_pipeline->isReadyToProcess()) {
       // Capturing frame
       _start_time = std::chrono::steady_clock::now();
-      _cap >> _curr_frame;
+      while (!_camera.getVideoFrame(_curr_frame, 100)) {
+        cout << "Waiting for video frame..." << endl;
+      }
       if (_curr_frame.empty()) {
         // Input stream is over
         return return_type::error;
@@ -187,9 +190,10 @@ public:
       return return_type::warning;
     }
     if (!no_show) {
-      _out_frame =
-          renderHumanPose(result->asRef<HumanPoseResult>(), _output_transform);
-      cv::imshow("Human Pose Estimation Results", _out_frame);
+      cv::imshow("Human Pose Estimation Results", _curr_frame);
+      // _out_frame =
+      //     renderHumanPose(result->asRef<HumanPoseResult>(), _output_transform);
+      // cv::imshow("Human Pose Estimation Results", _out_frame);
       // cv::imshow("Human Pose Estimation Results",
       // result->asRef<HumanPoseResult>().heatMaps[0]);
       int key = cv::waitKey(1000.0 / fps);
@@ -197,7 +201,7 @@ public:
         return return_type::error;
       }
     }
-    frames_processed++;
+    // frames_processed++;
 
     // Prepare output
     std::vector<HumanPose> poses = result->asRef<HumanPoseResult>().poses;
@@ -226,11 +230,19 @@ public:
 
     _start_time = chrono::steady_clock::now();
     // setup video capture
-    _cap.open(_device);
-    if (!_cap.isOpened()) {
-      throw std::invalid_argument("Cannot open the video camera");
+    _camera.options->video_width=800;
+    _camera.options->video_height=600;
+    _camera.options->framerate = 25;
+    _camera.options->verbose = false;
+    _camera.startVideo();
+    // _cap.open(_device);
+    // if (!_cap.isOpened()) {
+    //   throw std::invalid_argument("Cannot open the video camera");
+    // }
+    // _cap >> _curr_frame;
+    while (!_camera.getVideoFrame(_curr_frame, 100)) {
+      cout << "Waiting for video frame..." << endl;
     }
-    _cap >> _curr_frame;
     cv::Size resolution = _curr_frame.size();
     size_t found = out_res.find("x");
     if (found != string::npos) {
@@ -282,10 +294,10 @@ public:
   unique_ptr<ResultBase> result;
 
 private:
+  lccv::PiCamera _camera;
   int _device = 0;
   string _model_file;
   string _agent_id;
-  cv::VideoCapture _cap;
   chrono::steady_clock::time_point _start_time;
   cv::Mat _curr_frame, _out_frame;
   OutputTransform _output_transform;
@@ -327,7 +339,7 @@ int main(int argc, char const *argv[]) {
     }
     Hpe2dPlugin hpe;
     json params = {
-        {"device", cam_id}, {"model_file", argv[1]}, {"out_res", "800x450"}};
+        {"device", cam_id}, {"model_file", argv[1]}, {"out_res", "640x480"}};
     hpe.set_params(&params);
     json output = {};
 

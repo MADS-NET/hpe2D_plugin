@@ -68,6 +68,9 @@ else()
   message(STATUS "OpenVINO headers found at ${OPENVINO_INCLUDE_DIR}")
 endif()
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBCAMERA REQUIRED libcamera)
+
 include(FetchContent)
 # pugg is for the plugin system
 FetchContent_Declare(pugg 
@@ -89,7 +92,13 @@ FetchContent_Declare(plugin
   GIT_TAG        HEAD
   GIT_SHALLOW    TRUE
 )
-FetchContent_MakeAvailable(pugg json)
+
+FetchContent_Declare(LCCV
+  GIT_REPOSITORY https://github.com/pbosetti/LCCV.git
+  GIT_TAG        HEAD
+  GIT_SHALLOW    TRUE
+)
+FetchContent_MakeAvailable(pugg json LCCV)
 FetchContent_Populate(plugin)
 
 # Download OpenPOSE models #####################################################
@@ -178,6 +187,8 @@ include_directories(
   ${COMMON}/utils/include
   ${OPENVINO_INCLUDE_DIR}
   ${json_SOURCE_DIR}/include
+  ${lccv_SOURCE_DIR}/include
+  ${LIBCAMERA_INCLUDE_DIRS}
 )
 
 add_library(common STATIC ${COMMON_SOURCES} ${COMMON_HEADERS})
@@ -186,11 +197,10 @@ target_compile_options(common PUBLIC -fPIC)
 endif()
 
 # These plugins are always build and use for testing
-add_plugin(hpe2d LIBS common ${OpenCV_LIBS} openvino::runtime)
+add_plugin(hpe2d LIBS common ${OpenCV_LIBS} openvino::runtime lccv_static ${LIBCAMERA_LINK_LIBRARIES})
 
 add_executable(query_devices ${SRC_DIR}/query_devices.cpp ${SRC_DIR}/slog.cpp)
 target_link_libraries(query_devices PRIVATE ${OpenCV_LIBS} openvino::runtime)
-
 
 # INSTALL ######################################################################
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
