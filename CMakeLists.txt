@@ -84,13 +84,13 @@ FetchContent_Declare(json
   GIT_SHALLOW    TRUE
 )
 
-FetchContent_Declare(plugin 
+FetchContent_MakeAvailable(pugg json)
+
+FetchContent_Populate(plugin 
   GIT_REPOSITORY https://github.com/pbosetti/mads_plugin.git
   GIT_TAG        HEAD
   GIT_SHALLOW    TRUE
 )
-FetchContent_MakeAvailable(pugg json)
-FetchContent_Populate(plugin)
 
 # Download OpenPOSE models #####################################################
 set(MODEL_NAME "human-pose-estimation-0001" CACHE STRING "Model name (no extension)")
@@ -182,7 +182,7 @@ include_directories(
 
 add_library(common STATIC ${COMMON_SOURCES} ${COMMON_HEADERS})
 if(UNIX)
-target_compile_options(common PUBLIC -fPIC)
+  target_compile_options(common PUBLIC -fPIC)
 endif()
 
 # These plugins are always build and use for testing
